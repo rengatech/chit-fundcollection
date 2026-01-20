@@ -13,25 +13,17 @@ class Register extends BaseRegister
     {
         return $schema
             ->components([
-                $this->getNameFormComponent(),
                 $this->getEmailFormComponent(),
-                TextInput::make('mobile')
-                    ->required()
-                    ->unique('users', 'mobile')
-                    ->numeric()
-                    ->length(10),
                 $this->getPasswordFormComponent(),
                 $this->getPasswordConfirmationFormComponent(),
-                Textarea::make('address')
-                    ->required()
-                    ->columnSpanFull(),
-                TextInput::make('city')
-                    ->required(),
-                TextInput::make('pincode')
-                    ->required()
-                    ->numeric()
-                    ->length(6),
             ])
             ->statePath('data');
+    }
+
+    protected function getRegistrationData(array $data): array
+    {
+        $data['name'] = explode('@', $data['email'])[0];
+
+        return $data;
     }
 }
