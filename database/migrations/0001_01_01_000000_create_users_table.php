@@ -6,50 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
+    public function up()
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->string('mobile', 10)->nullable()->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->enum('role', ['admin', 'member'])->default('member');
-            $table->text('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('pincode', 6)->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->rememberToken();
-            $table->timestamps();
-        });
-
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
-            $table->string('token');
-            $table->timestamp('created_at')->nullable();
-        });
-
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('mobile', 10)->unique()->after('email');
+            $table->enum('role', ['admin', 'member'])->default('member')->after('password');
+            $table->text('address')->after('role');
+            $table->string('city')->after('address');
+            $table->string('pincode', 6)->after('city');
+            $table->boolean('is_active')->default(true)->after('pincode');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['mobile', 'role', 'address', 'city', 'pincode', 'is_active']);
+        });
     }
 };
