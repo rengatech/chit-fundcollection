@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Enrollment extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    use HasFactory;
+
     protected $fillable = [
         'enrollment_number',
         'user_id',
@@ -24,19 +22,11 @@ class Enrollment extends Model
         'status',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $casts = [
+        'enrollment_date' => 'date',
+    ];
 
-        static::creating(function ($model) {
-            if (empty($model->enrollment_number)) {
-                $latest = static::latest('id')->first();
-                $nextId = $latest ? $latest->id + 1 : 1;
-                $model->enrollment_number = 'ENR-' . date('Y') . '-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
-            }
-        });
-    }
-
+    // Relationships
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -50,5 +40,41 @@ class Enrollment extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    // Generate enrollment number
+    public static function generateEnrollmentNumber()
+    {
+        $year = date('Y');
+        $lastEnrollment = self::where('enrollment_number', 'like', "ENR-{$year}-%")
+            ->orderBy('enrollment_number', 'desc')
+            ->first();
+
+        if ($lastEnrollment) {
+            $lastNumber = (int) substr($lastEnrollment->enrollment_number, -5);
+            $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '00001';
+        }
+
+        return "ENR-{$year}-{$newNumber}";
+    }
+
+    
+    public function isCompleted()
+    {
+        return $this->paid_installments >= $this->total_installments;
+    }
+
+    
+    public function getRemainingAmountAttribute()
+    {
+        return $this->total_amount - $this->amount_paid;
+    }
+
+  
+    public function getRemainingInstallmentsAttribute()
+    {
+        return $this->total_installments - $this->paid_installments;
     }
 }

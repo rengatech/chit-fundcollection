@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Payment;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 
 class PaymentReceiptController extends Controller
 {
     public function generate(Payment $payment)
     {
-        $pdf = Pdf::loadView('receipts.payment', compact('payment'));
-        return $pdf->download('receipt-' . $payment->receipt_number . '.pdf');
+        $pdf = Pdf::loadView('pdf.receipt', compact('payment'));
+        
+        return $pdf->stream("receipt-{$payment->receipt_number}.pdf");
     }
 }

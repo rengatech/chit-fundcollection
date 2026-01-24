@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Scheme extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'monthly_amount',
@@ -21,11 +19,23 @@ class Scheme extends Model
         'is_active',
     ];
 
-    /**
-     * Get the enrollments for the scheme.
-     */
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'is_active' => 'boolean',
+    ];
+
+    // Relationships
     public function enrollments()
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    // Calculate maturity amount
+    public function calculateMaturityAmount()
+    {
+        $totalAmount = $this->monthly_amount * $this->duration_months;
+        $bonusAmount = $totalAmount * ($this->bonus_percentage / 100);
+        return $totalAmount + $bonusAmount;
     }
 }

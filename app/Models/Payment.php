@@ -2,15 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    use HasFactory;
+
     protected $fillable = [
         'receipt_number',
         'enrollment_id',
@@ -23,31 +21,11 @@ class Payment extends Model
         'remarks',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    protected $casts = [
+        'payment_date' => 'date',
+    ];
 
-        static::creating(function ($model) {
-            if (empty($model->receipt_number)) {
-                $latest = static::latest('id')->first();
-                $nextId = $latest ? $latest->id + 1 : 1;
-                $model->receipt_number = 'RCP-' . date('Y') . '-' . str_pad($nextId, 5, '0', STR_PAD_LEFT);
-            }
-        });
-
-        static::created(function ($model) {
-            $enrollment = $model->enrollment;
-            $enrollment->paid_installments = $enrollment->payments()->count();
-            $enrollment->amount_paid = $enrollment->payments()->sum('amount');
-            
-            if ($enrollment->paid_installments >= $enrollment->total_installments) {
-                $enrollment->status = 'completed';
-            }
-            
-            $enrollment->save();
-        });
-    }
-
+    // Relationships
     public function enrollment()
     {
         return $this->belongsTo(Enrollment::class);
@@ -56,5 +34,23 @@ class Payment extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // Generate receipt number
+    public static function generateReceiptNumber()
+    {
+        $year = date('Y');
+        $lastPayment = self::where('receipt_number', 'like', "RCP-{$year}-%")
+            ->orderBy('receipt_number', 'desc')
+            ->first();
+
+        if ($lastPayment) {
+            $lastNumber = (int) substr($lastPayment->receipt_number, -5);
+            $newNumber = str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '00001';
+        }
+
+        return "RCP-{$year}-{$newNumber}";
     }
 }
